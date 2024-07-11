@@ -126,11 +126,27 @@ padding-top: 10px;
 
 }
 
-
 #errorMsg {
   display: none;
   color: hsl(348, 100%, 61%);
   margin-top: 10px;
 }
 
+.card-content {
+  display: flex;
+  flex-direction: row;
+}
+
+.media-left {
+  margin-right: 20px;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.more-info-button {
+  margin-left: auto; /* Push the button to the right */
+}
 

@@ -25,6 +25,82 @@ function readFromLocalStorage() {
     return JSON.parse(localStorage.getItem("events"));
 }
 
+
+function renderEvents(eventsData) {
+    const eventResultsContainer = document.getElementById('eventResultsContainer'); // selects the HTML element with the ID eventResultsContainer, which is where the event cards will be displayed.//
+    eventResultsContainer.innerHTML = ''; // Clear previous results
+
+    eventsData.forEach(function(event) {                // This loop goes through each event object in the 'eventsData'//
+        const eventCard = document.createElement('div');   // Creates a new 'div' element //
+        eventCard.classList.add('card', 'mb-4');         // Adds CSS classes card and mb-4//
+
+        eventCard.innerHTML = `
+            <div class="card-image">
+                <figure class="image is-4by3">
+                    <img src="${event.thumbnail}" alt="${event.title}">
+                </figure>
+            </div>
+            <div class="card-content">
+                <div class="media">
+                    <div class="media-content">
+                        <p class="title is-4">${event.title}</p>
+                        <p class="subtitle is-6">${event.dateTime}</p>
+                    </div>
+                </div>
+                <div class="content">
+                    ${event.pricerange}
+                    <br>
+                    <time datetime="${event.dateTime}">${event.dateTime}</time>
+                </div>
+            </div>
+            <footer class="card-footer">
+                <button class="button is-info card-footer-item more-info-button" 
+                data-title="${event.title}" 
+                data-date="${event.dateTime}"
+                data-venue="${event.address}"
+                data-link="${event.link}"
+                data-info="${event.info}">More Info</button>
+            </footer>
+        `;
+
+        eventResultsContainer.appendChild(eventCard);    // appends the event card to the eventResultsContainer//
+    });
+// Attached event listeners to "More Info" buttons
+document.querySelectorAll('.more-info-button').forEach(function(button) {
+    button.addEventListener('click', handleMoreInfoButtonClick);
+});
+}
+
+function handleMoreInfoButtonClick(event) {
+    const button = event.target;                          // 
+    const title = button.getAttribute('data-title');     // Retrieving the values of data-title, data-info , data-date , data-venue, data-link //
+    const info = button.getAttribute('data-info');
+    const date = button.getAttribute('data-date');
+    const venue = button.getAttribute('data-venue');
+    const link = button.getAttribute('data-link');
+
+
+    document.getElementById('modalTitle').textContent = title;       // modal's title element is populated with event's title//
+    document.getElementById('modalInfo').innerHTML = `              
+        <p><strong>Date:</strong> ${date}</p>
+        <p><strong>Venue:</strong> ${venue}</p>
+        <p><strong>Event Link:</strong> <a href="${link}" target="_blank">${link}</a></p>
+        <p><strong>Description:</strong> ${info}</p>
+    `;
+    const modal = document.getElementById('eventModal');
+    modal.classList.add('is-active');
+
+    // Two event listners are added to Close modal on background or close button click//
+    modal.querySelector('.modal-background').addEventListener('click', () => {
+        modal.classList.remove('is-active');
+    });
+    modal.querySelector('.modal-close').addEventListener('click', () => {
+        modal.classList.remove('is-active');
+    });
+}
+
+
+
 function queryEventsFromTicketMaster(eventType, eventState, eventCity) {
     if (eventType === "") {
         eventType = "events";
@@ -84,6 +160,7 @@ function queryEventsFromTicketMaster(eventType, eventState, eventCity) {
                     eventsData.push(eventInfo);
                 }
                 storeToLocalStorage(eventsData);
+                renderEvents(eventsData);  // calling render method here 
             }
 
             //TODO: Call render method 
@@ -91,6 +168,15 @@ function queryEventsFromTicketMaster(eventType, eventState, eventCity) {
         });
 
 }
+
+document.addEventListener('DOMContentLoaded', () => {     // Allows webpages to be updated dynamically without reloading the entire page //
+    const storedEvents = readFromLocalStorage();
+    if (storedEvents) {
+        renderEvents(storedEvents);
+    }
+});
+
+
 
 // Method to validate that the event city field is not empty.
 function validateFieldsAreNotEmpty() {
@@ -140,3 +226,4 @@ document.querySelectorAll('.eventData').forEach(el => {
 
 console.log("hello");
 // window.onload = populateUsStates;
+
