@@ -125,7 +125,6 @@ input {
 padding-top: 10px;
 
 }
-
 #errorMsg {
   display: none;
   color: hsl(348, 100%, 61%);
