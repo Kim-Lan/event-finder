@@ -158,7 +158,7 @@ function handleMoreInfoButtonClick(event, eventObj) {
     // Event Link
     const linkEl = document.createElement('p');
     linkEl.id = 'modalLink';
-    linkEl.innerHTML = `<a href="${eventObj.link}" target="_blank">Event Link</a>`;
+    linkEl.innerHTML = `<a href="${eventObj.link}" target="_blank">Event</a>`;
     modalContentEl.appendChild(linkEl);
 
     // Added horizontal line after Event Link
