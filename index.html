@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Finder</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.1/css/bulma.min.css">
+  <link rel="stylesheet" href="./assets/css/style.css">
+</head>
+
+<body>
+  <!-- Navbar -->
+  <nav class="navbar has-shadow">
+    <!-- Logo -->
+    <div class="navbar-brand">
+      <a class="navbar-item">
+        <img src="./assets/images/logo1.png" alt="site logo" id="siteLogo" style="max-height: 100px">
+      </a>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <section class="section">
+    <!-- <div class="container"> -->
+    <div class="columns is-multiline">
+      <div class="column is-6-tablet is-5-desktop">
+        <div class="notification is-info is-light">
+          <h2 class="has-text-weight-bold is-size-3-mobile is-size-3-tablet is-size-2-desktop tite has-text-centered">
+            Find an Event
+          </h2>
+        </div>
+        <form id="search-form">
+          <div class="formControlContainer">
+            <label for="eventType" class="label formLabels">Event Type</label>
+            <input id="eventType" type="text" class="input is-info formControls" placeholder="enter event type">
+          </div>
+          <div class="formControlContainer mt-3">
+            <label for="eventCity" class="label formLabels">City</label>
+            <input id="eventCity" type="text" class="input is-info formControls" placeholder="enter event city">
+          </div>
+          <div class="formControlContainer mt-3">
+            <label for="eventState" class="label formLabels">State</label>
+            <div class="select is-info formControls">
+              <select id="eventState" class="formControls" style="color:black">
+              </select>
+            </div>
+          </div>
+          <div>
+            <p id="errorMsg" class="is-size-7"></p>
+          </div>
+          <div class="formControlContainer  mt-3">
+            <button id="searchBtn" type="submit"
+              class="has-text-weight-medium is-size-5-mobile is-size-5-tablet is-size-4-desktop button is-info is-light is-responsive formControls">Search</button>
+          </div>
+        </form>
+      </div>
+      <div class="column is-6-tablet is-7-desktop" id="eventResultsContainer">
+        <div class="loader"></div>
+      </div>
+      <!-- <div class="column is-12-tablet is-3-desktop" id="eventMapContainer">Lorem, ipsum dolor sit amet
+                    consectetur
+                    adipisicing elit.
+                    Nostrum nisi nam
+                    ratione
+                    odit nulla maiores consequuntur cum. Officia tenetur quis repudiandae cumque aspernatur
+                    magnam
+                    provident, voluptatibus id corporis molestiae mollitia.
+                </div> -->
+    </div>
+    <!-- </div> -->
+  </section>
+
+  <!-- Bulma Modal for more info -->
+  <div id="eventModal" class="modal">
+    <div class="modal-background"></div>
+    <div class="modal-content">
+      <div class="box">
+      </div>
+    </div>
+    <button class="modal-close is-large" aria-label="close"></button>
+  </div>
+  <script src="./assets/js/script.js"></script>
+
+</body>
+
+</html>
