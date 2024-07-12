@@ -32,17 +32,36 @@ function renderResults() {
     const events = readFromLocalStorage();
     resultsContainerEl.innerHTML = '';
 
+    // Create Google button
+    const googleBtn = document.createElement('button');
+    googleBtn.setAttribute('class', 'button mb-5');
+
+    // Add Google Icon
+    googleBtn.textContent = `Search Events in ${eventCityEl.value} on Google`;
+    const googleIcon = document.createElement('img');
+    googleIcon.src = './assets/images/google-logo.png';
+    googleIcon.style.width = '24px';
+    googleIcon.style.height = '24px';
+    googleIcon.classList.add('mr-4');
+    googleBtn.prepend(googleIcon);
+    resultsContainerEl.append(googleBtn);
+
     // Loop through events and render a card for each event
     for (const event of events) {
         renderCard(event);
     }
 }
+
+function handleGoogleButtonClick(event) {
+    
+}
   
 function renderCard(eventObj) {
     // Results card
     const cardEl = document.createElement('div');
-    cardEl.setAttribute('class', 'p-5 mb-5');
-    cardEl.style.border = '2px solid black';
+    cardEl.setAttribute('class', 'p-5 mb-5 has-background-light has-text-dark');
+    // cardEl.style.border = '2px solid var(--bulma-dark)';
+    cardEl.style.borderRadius = '10px';
   
     // Main row
     const mainRowEl = document.createElement('div');
@@ -52,6 +71,7 @@ function renderCard(eventObj) {
     const thumbnailEl = document.createElement('div');
     thumbnailEl.style.backgroundImage = `url(${eventObj.thumbnail})`;
     thumbnailEl.style.backgroundSize = 'cover';
+    thumbnailEl.style.backgroundPosition = 'center';
     thumbnailEl.style.height = '150px';
     thumbnailEl.style.width = '150px';
     thumbnailEl.setAttribute('class', 'mr-5');
@@ -72,9 +92,17 @@ function renderCard(eventObj) {
     // Info
     const infoEl = document.createElement('div');
     const dateEl = document.createElement('p');
-    dateEl.textContent = 'Date & Time: ' + (new Date (eventObj.dateTime)).toLocaleString();
+    dateEl.innerHTML = `<b>Date & Time:</b> ${(new Date (eventObj.dateTime))
+        .toLocaleString([], {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            timeZoneName: 'short'
+        })}`;
     const addressEl = document.createElement('p');
-    addressEl.textContent = 'Address: ' + eventObj.address;
+    addressEl.innerHTML = `<b>Address:</b> ${eventObj.address}`;
     infoEl.append(dateEl, addressEl);
     mainInfoContainerEl.append(infoEl);
   
@@ -83,16 +111,20 @@ function renderCard(eventObj) {
     bottomRow.setAttribute('class', 'is-flex is-flex-direction-row is-justify-content-space-between is-align-items-flex-end');
   
     // Source
+    const sourceLinkEl = document.createElement('a');
+    sourceLinkEl.href = eventObj.link ? eventObj.link : 'https://www.ticketmaster.com';
     const sourceEl = document.createElement('img');
     sourceEl.src = './assets/images/ticketmaster-logo.png';
     sourceEl.style.height = '20px';
     sourceEl.style.width = '20px';
-    bottomRow.append(sourceEl);
+    sourceLinkEl.append(sourceEl);
+    bottomRow.append(sourceLinkEl);
   
     // More info
     const moreInfoEl = document.createElement('button');
     moreInfoEl.textContent = 'More Info';
-    moreInfoEl.classList.add('button');
+    moreInfoEl.setAttribute('class', 'button');
+    moreInfoEl.style.width = '125px';
     moreInfoEl.addEventListener('click', (event) => handleMoreInfoButtonClick(event, eventObj)); // Call openModal function and pass eventObj
     bottomRow.append(moreInfoEl);
   
