@@ -24,7 +24,7 @@
   <section class="section">
     <!-- <div class="container"> -->
     <div class="columns is-multiline">
-      <div class="column is-6-tablet is-5-desktop">
+      <div class="column is-6-tablet is-3-desktop">
         <div class="notification is-info is-light">
           <h2 class="has-text-weight-bold is-size-3-mobile is-size-3-tablet is-size-2-desktop tite has-text-centered">
             Find an Event
@@ -32,15 +32,15 @@
         </div>
         <form id="search-form">
           <div class="formControlContainer">
-            <label for="eventType" class="label formLabels">Event Type</label>
+            <label for="eventType" class="label formLabels has-text-weight-normal">Event Type</label>
             <input id="eventType" type="text" class="input is-info formControls" placeholder="enter event type">
           </div>
           <div class="formControlContainer mt-3">
-            <label for="eventCity" class="label formLabels">City</label>
+            <label for="eventCity" class="label formLabels has-text-weight-normal">City</label>
             <input id="eventCity" type="text" class="input is-info formControls" placeholder="enter event city">
           </div>
           <div class="formControlContainer mt-3">
-            <label for="eventState" class="label formLabels">State</label>
+            <label for="eventState" class="label formLabels has-text-weight-normal">State</label>
             <div class="select is-info formControls">
               <select id="eventState" class="formControls" style="color:black">
               </select>
@@ -55,18 +55,13 @@
           </div>
         </form>
       </div>
-      <div class="column is-6-tablet is-7-desktop" id="eventResultsContainer">
+      <div class="column is-6-tablet is-5-desktop" id="eventResultsContainer">
         <div class="loader"></div>
       </div>
-      <!-- <div class="column is-12-tablet is-3-desktop" id="eventMapContainer">Lorem, ipsum dolor sit amet
-                    consectetur
-                    adipisicing elit.
-                    Nostrum nisi nam
-                    ratione
-                    odit nulla maiores consequuntur cum. Officia tenetur quis repudiandae cumque aspernatur
-                    magnam
-                    provident, voluptatibus id corporis molestiae mollitia.
-                </div> -->
+      <div class="column is-12-tablet is-4-desktop" id="eventMapContainer">
+        <div id="googleEvents"></div>
+        <div id="googleMapsContainer"></div>
+      </div>
     </div>
     <!-- </div> -->
   </section>
@@ -80,6 +75,9 @@
     </div>
     <button class="modal-close is-large" aria-label="close"></button>
   </div>
+  <script
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBDQBqqVosxKqFZGE2XKhBEoZUIiWJ-OUE&v=weekly&libraries=marker"
+    defer></script>
   <script src="./assets/js/script.js"></script>
 
 </body>

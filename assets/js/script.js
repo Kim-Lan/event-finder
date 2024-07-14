@@ -12,43 +12,254 @@ const usStates = ["AK", "AL", "AS", "AZ", "AR", "CA", "CO", "CT", "DE", "DC",
     "AE", "AA", "AP"];
 const gApiKey = "AIzaSyAjEdX6S_xFQigVRScAJn6tIFbdu_18lzA"
 const ticketMasterApiKey = "NKLwGZ8Q2Ia64tUfDRcaU1AUZ0ChUWGW"
+const gMapsBaseUrl = "https://maps.googleapis.com/maps/api/geocode/json?";
+let map;
 
 
 // <----- Helper Methods ----->
-function storeToLocalStorage(eventsArr) {
+
+// <---- local storage helper methods ---->
+function storeToLocalStorage(key, eventsArr) {
     console.log("Storing the below info to localstorage");
     console.log(eventsArr);
-    localStorage.setItem("events", JSON.stringify(eventsArr));
+    localStorage.setItem(key, JSON.stringify(eventsArr));
 }
 
 // Helper method to read from local storage.
-function readFromLocalStorage() {
-    return JSON.parse(localStorage.getItem("events"));
+function readFromLocalStorage(key) {
+    const output = JSON.parse(localStorage.getItem(key));
+    if (!output) {
+        output = [];
+    }
+    return output;
 }
 
-// Helper method to render results.
-const resultsContainerEl = document.getElementById('eventResultsContainer');
+// <---- Map helper methods ---->
+//TODO: Add Credit
+// Helper method to plot a set of locations on the map
+function plotCoordinatesOnMap(locations) {
+    // Create an info window to share between markers.
+    const infoWindow = new google.maps.InfoWindow();
 
-function renderResults() {
-    // Get events from localStorage
-    const events = readFromLocalStorage();
-    resultsContainerEl.innerHTML = '';
+    // Create the markers.
+    if (locations) {
+        console.log(locations);
+        locations.forEach(([position, title], i) => {
+            const marker = new google.maps.marker.AdvancedMarkerElement({
+                map,
+                position: position,
+                title: `${title}`,
+            });
 
-    // Loop through events and render a card for each event
-    if (events) {
-        for (const event of events) {
-            renderCard(event);
-        }
+            // Add a click listener for each marker, and set up the info window.
+            marker.addListener("click", () => {
+                infoWindow.close();
+                infoWindow.setContent(marker.title);
+                infoWindow.open(marker.map, marker);
+            });
+        });
     }
 }
 
-// Helper method to create results card
+// Helper method to get co-ordinates given a list of addresses and plotting them on graph.
+function getLatLngForaddressAndPlotOnMap(addresses, isCenter = false) {
+    for (a of addresses) {
+        let formattedAddress = a.replaceAll(' ', '+');
+        const geoCodeApi = `${gMapsBaseUrl}address=${formattedAddress}&key=${gApiKey}`;
+        console.log(`Invoking api: ${geoCodeApi} to get the lat, lng`);
+        fetch(geoCodeApi)
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                console.log(data);
+                const lat = data.results[0].geometry.location.lat;
+                const lng = data.results[0].geometry.location.lng;
+                //locations.push([{ lat: lat, lng: lng }, a])
+                if (isCenter) {
+                    console.log(`Request for center. Storing co-ordinates (${lat}, ${lng}) to local storage and initing the map with them`);
+                    storeToLocalStorage("center", [[{ lat: lat, lng: lng }, a]]);
+                    initMap();
+                    return;
+                }
+                // console.log(`Plotting (${lat}, ${lng}) on map`);
+                console.log("Plotting " + data.results[0].formatted_address);
+                plotCoordinatesOnMap([[{ lat: lat, lng: lng }, data.results[0].formatted_address]]);
+            });
+    }
+}
+
+// TODO: Credit from google doc
+// Initialize the map with a "center" location stored in local storage.
+function initMap() {
+    const locationData = readFromLocalStorage("center");
+    console.log("initing map with below data");
+    console.log(locationData);
+    if (locationData) {
+        const curLocation = locationData[0];
+        console.log("curloca");
+        console.log(curLocation);
+        map = new google.maps.Map(document.getElementById("googleMapsContainer"), {
+            zoom: 10,
+            center: {
+                lat: curLocation[0].lat, lng: curLocation[0].lng
+            },
+            mapId: "eventsMap"
+        });
+        plotCoordinatesOnMap(locationData);
+    }
+}
+
+// <----- Helper methods for rendering results ---->
+const resultsContainerEl = document.getElementById('eventResultsContainer');
+
+// Read from local storage, loop through the events and render the events card.
+function renderResults() {
+    // Get events from localStorage
+    const events = readFromLocalStorage("events");
+    resultsContainerEl.innerHTML = '';
+    const addresses = []
+
+    // Loop through events and render a card for each event
+    console.log("events");
+    console.log(events);
+    if (events.length !== 0) {
+        for (const event of events) {
+            renderCard(event);
+            // record address
+            addresses.push(event.address);
+        }
+    } else {
+        console.log("No events found");
+        // display a notification saying no results from ticket master
+        const divEl = document.createElement("div");
+        divEl.setAttribute("class", "notification is-warning is-light")
+
+        const delBtnEl = document.createElement("button");
+        delBtnEl.setAttribute("class", "delete");
+        const pMsgEl = document.createElement("p");
+        pMsgEl.textContent = `No events found on TicketMaster for ${eventCityEl.value},  ${eventStateEl.value}.`;
+        divEl.append(delBtnEl, pMsgEl);
+        resultsContainerEl.append(divEl);
+        console.log("wiat");
+    }
+
+    // Create Google button
+    const googleBtn = document.createElement('button');
+    googleBtn.setAttribute('class', 'button mb-5 is-info is-light is-hovered has-text-weight-normal');
+    document.getElementById("googleEvents").innerHTML = "";
+
+    // Add Google Icon
+    googleBtn.textContent = `Google search events results in ${eventCityEl.value},  ${eventStateEl.value}.`;
+    const googleIcon = document.createElement('img');
+    googleIcon.src = './assets/images/google.png';
+    googleIcon.style.width = '24px';
+    googleIcon.style.height = '24px';
+    googleIcon.classList.add('mr-4');
+    googleBtn.prepend(googleIcon);
+    // resultsContainerEl.append(googleBtn);
+    document.getElementById("googleEvents").append(googleBtn);
+
+    // Add event listener to Google button
+    googleBtn.addEventListener('click', handleGoogleButtonClick);
+
+    console.log("Getting lat/lng for event addresses and plot on map ");
+    console.log(addresses)
+    getLatLngForaddressAndPlotOnMap(addresses);
+}
+
+// Helper method to create results with styling card
 function renderCard(eventObj) {
+
+    const cardBoxEl = document.createElement("div");
+    cardBoxEl.setAttribute("class", "box");
+    const articleEl = document.createElement("article");
+    articleEl.setAttribute("class", "media");
+
+    // Thumbnail
+    const mediaImgEl = document.createElement('div');
+    mediaImgEl.setAttribute('class', 'media-left'); //mr-5 
+    mediaImgEl.style.backgroundImage = `url(${eventObj.thumbnail})`;
+    mediaImgEl.style.backgroundSize = 'cover';
+    mediaImgEl.style.backgroundPosition = 'center';
+    mediaImgEl.style.height = '150px';
+    mediaImgEl.style.width = '150px';
+    // append thumbnail to article
+    articleEl.appendChild(mediaImgEl);
+
+    // Results card
+    const mediaContentEl = document.createElement('div');
+    mediaContentEl.setAttribute("class", "media-content");
+    const contentCardEL = document.createElement('div');
+    contentCardEL.setAttribute("class", "content")
+
+    // Title
+    const titleEl = document.createElement('h3');
+    titleEl.textContent = eventObj.title;
+
+    // Info
+    const infoEl = document.createElement('div');
+    const dateEl = document.createElement('p');
+    dateEl.innerHTML = `<b>Date & Time:</b> ${(new Date(eventObj.dateTime))
+        .toLocaleString([], {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            timeZoneName: 'short'
+        })}`;
+    const addressEl = document.createElement('p');
+    addressEl.innerHTML = `<b>Address:</b> ${eventObj.address}`;
+    infoEl.append(dateEl, addressEl);
+    contentCardEL.append(titleEl, infoEl);
+
+    //Nav bar
+    const navEl = document.createElement('nav');
+    navEl.setAttribute("class", "level");
+    const miscDivEl = document.createElement('div');
+    miscDivEl.setAttribute("class", "level-left");
+
+    // ticketmaster icon
+    const aSrcEl = document.createElement("a");
+    aSrcEl.setAttribute('class', "level-item");
+    const spanSrcEl = document.createElement("span");
+    spanSrcEl.setAttribute("class", "icon is-small");
+    const sourceEl = document.createElement('img');
+    sourceEl.src = './assets/images/ticketmaster-logo.png';
+    // sourceEl.style.height = '20px';
+    // sourceEl.style.width = '25px';
+    spanSrcEl.appendChild(sourceEl);
+    aSrcEl.append(spanSrcEl);
+
+    // More info
+    const aMoreInfoEl = document.createElement("a");
+    aMoreInfoEl.setAttribute('class', "level-item");
+    const spanMoreInfoEl = document.createElement("span");
+    spanMoreInfoEl.textContent = 'More Info';
+    spanMoreInfoEl.addEventListener('click', (event) => handleMoreInfoButtonClick(event, eventObj));
+    aMoreInfoEl.append(spanMoreInfoEl);
+    miscDivEl.append(aSrcEl);
+    miscDivEl.append(aMoreInfoEl);
+    navEl.append(miscDivEl);
+
+    mediaContentEl.append(contentCardEL)
+    mediaContentEl.append(navEl);
+    articleEl.append(mediaContentEl);
+    cardBoxEl.appendChild(articleEl);
+    resultsContainerEl.append(cardBoxEl);
+}
+
+// Helper method to create results card
+function _renderCard(eventObj) {
     // Results card
     const cardEl = document.createElement('div');
-    cardEl.setAttribute('class', 'p-5 mb-5');
-    cardEl.style.border = '2px solid black';
+    // cardEl.setAttribute('class', 'p-5 mb-5 ');
+    cardEl.style.borderRadius = '10px';
+    // cardEl.style.border = '2px solid black';
     cardEl.style.position = 'relative';
+    cardEl.style.width = "60%";
+
     // Main row
     const mainRowEl = document.createElement('div');
     mainRowEl.setAttribute('class', 'is-flex is-flex-direction-row mb-4');
@@ -57,6 +268,7 @@ function renderCard(eventObj) {
     const thumbnailEl = document.createElement('div');
     thumbnailEl.style.backgroundImage = `url(${eventObj.thumbnail})`;
     thumbnailEl.style.backgroundSize = 'cover';
+    thumbnailEl.style.backgroundPosition = 'center';
     thumbnailEl.style.height = '150px';
     thumbnailEl.style.width = '150px';
     thumbnailEl.setAttribute('class', 'mr-5');
@@ -77,9 +289,18 @@ function renderCard(eventObj) {
     // Info
     const infoEl = document.createElement('div');
     const dateEl = document.createElement('p');
-    dateEl.textContent = 'Date & Time: ' + (new Date(eventObj.dateTime)).toLocaleString();
+    dateEl.innerHTML = `<b>Date & Time:</b> ${(new Date(eventObj.dateTime))
+        .toLocaleString([], {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            timeZoneName: 'short'
+        })}`;
     const addressEl = document.createElement('p');
-    addressEl.textContent = 'Address: ' + eventObj.address;
+    // addressEl.textContent = 'Address: ' + eventObj.address;
+    addressEl.innerHTML = `<b>Address:</b> ${eventObj.address}`;
     infoEl.append(dateEl, addressEl);
     mainInfoContainerEl.append(infoEl);
 
@@ -88,6 +309,8 @@ function renderCard(eventObj) {
     bottomRow.setAttribute('class', 'is-flex is-flex-direction-row is-justify-content-space-between is-align-items-flex-end');
 
     // Source
+    const sourceLinkEl = document.createElement('a');
+    sourceLinkEl.href = eventObj.link ? eventObj.link : 'https://www.ticketmaster.com';
     const sourceEl = document.createElement('img');
     sourceEl.src = './assets/images/ticketmaster-logo.png';
     sourceEl.style.height = '20px';
@@ -106,6 +329,115 @@ function renderCard(eventObj) {
     resultsContainerEl.append(cardEl);
 }
 
+// <---- google events link ---->
+
+function handleGoogleButtonClick(event) {
+
+    const eventCity = eventCityEl.value;
+    const eventType = eventTypeEl.value;
+    const eventState = eventStateEl.value;
+    const query = `${eventType} events in ${eventCity}, ${eventState}`;
+    const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&ibp=htl;events`;
+    window.open(googleSearchUrl, '_blank');
+}
+
+// <----- Helper methods for form submit ----->
+
+// Helper method to query events from ticket master and render it.
+function queryAndRenderEventsFromTicketMaster(eventType, eventCity, eventState) {
+    if (eventType === "") {
+        eventType = "events";
+    }
+    let queryString = `${eventType}+${eventCity}+${eventState}`;
+    console.log(queryString);
+    const ticketMstrApi = `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${ticketMasterApiKey}
+                            &city=${eventCity}&stateCode=${eventState}&keyword=${eventType}&size=10&radius=500`;
+    console.log(`Invoking api: ${ticketMstrApi} to get list of events from TicketMaster!`);
+    fetch(ticketMstrApi)
+        .then(function (response) {
+            console.log("response");
+            return response.json();
+        })
+        .then(function (data) {
+            console.log(data);
+            const eventsData = [];
+            if ('_embedded' in data) {
+                const eventsResponse = data._embedded.events;
+                console.log("Response from ticketmaster api call");
+                console.log(eventsResponse);
+                for (d of eventsResponse) {
+                    const eventInfo = {
+                        title: d.name,
+                        dateTime: d.dates.start.dateTime,
+                        info: "",
+                        pricerange: "Free",
+                        thumbnail: d.images[0].url,
+                        source: "ticketmaster",
+                        link: "",
+                        address: ""
+                    }
+                    if ("_embedded" in d && "venues" in d._embedded) {
+                        eventInfo.link = d._embedded.venues[0].url;
+                        eventInfo.address = d._embedded.venues[0].address.line1 === undefined ? "" : d._embedded.venues[0].address.line1 + `, ${eventCity}, ${eventState}`;
+                    }
+
+                    if ("info" in d) {
+                        eventInfo.info = d.info;
+                    }
+
+                    if ("priceRanges" in d) {
+                        const priceData = d.priceRanges[0];
+                        let pInfoStr = ""
+                        if (("min" in priceData) && ("max" in priceData)) {
+                            pInfoStr = priceData.min + " - " + priceData.max + " USD";
+                        } else if ("min" in priceData) {
+                            pInfoStr = priceData.min + "USD";
+                        } else if ("max" in priceData) {
+                            pInfoStr = priceData.max + "USD";
+                        }
+                        eventInfo.pricerange = pInfoStr;
+                    }
+
+                    eventsData.push(eventInfo);
+                }
+                storeToLocalStorage("events", eventsData);
+            }
+
+            renderResults();
+            // clear input fields
+            // Commenting this as it deletes the entries on page load.
+            // eventCityEl.value = "";
+            // eventTypeEl.value = "";
+            // eventStateEl.value = "";
+        });
+
+}
+
+// Method to validate that the event city field is not empty.
+function validateFieldsAreNotEmpty() {
+    if (eventCityEl.value === "") {
+        pErrorMsgEl.textContent = "Event city is a required field!"
+        pErrorMsgEl.style.display = "block";
+        pErrorMsgEl.style.color = "red";
+        return false;
+    }
+    return true;
+}
+
+function populateUsStates() {
+    const eventStateEl = document.getElementById("eventState");
+    for (s of usStates) {
+        const optionEl = document.createElement("option");
+        optionEl.textContent = s;
+        optionEl.value = s;
+        eventStateEl.appendChild(optionEl);
+    }
+}
+
+
+// <----- Event Call backs ---->
+
+// Event call back to  handle more-info button click.
 function handleMoreInfoButtonClick(event, eventObj) {
     //Implement opening modal
     const modal = document.getElementById('eventModal');
@@ -156,10 +488,12 @@ function handleMoreInfoButtonClick(event, eventObj) {
     modalContentEl.appendChild(priceRangeEl);
 
     // Event Link
-    const linkEl = document.createElement('p');
-    linkEl.id = 'modalLink';
-    linkEl.innerHTML = `<a href="${eventObj.link}" target="_blank">Event Link</a>`;
-    modalContentEl.appendChild(linkEl);
+    if (eventObj.link) {
+        const linkEl = document.createElement('p');
+        linkEl.id = 'modalLink';
+        linkEl.innerHTML = `<a href="${eventObj.link}" target="_blank">Event Link</a>`;
+        modalContentEl.appendChild(linkEl);
+    }
 
     // Added horizontal line after Event Link
     const hrEl2 = document.createElement('hr');
@@ -180,106 +514,22 @@ function handleMoreInfoButtonClick(event, eventObj) {
 
 }
 
-// Helper method to query events from ticket master and render it.
-function queryAndRenderEventsFromTicketMaster(eventType, eventCity, eventState) {
-    if (eventType === "") {
-        eventType = "events";
-    }
-    let queryString = `${eventType}+${eventCity}+${eventState}`;
-    console.log(queryString);
-    const ticketMstrApi = `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${ticketMasterApiKey}
-                            &city=${eventCity}&stateCode=${eventState}&keyword=${eventType}&size=10&radius=500`;
-    console.log(`Invoking api: ${ticketMstrApi} to get list of events from TicketMaster!`);
-    fetch(ticketMstrApi)
-        .then(function (response) {
-            console.log("response");
-            return response.json();
-        })
-        .then(function (data) {
-            console.log(data);
-            const eventsData = [];
-            if ('_embedded' in data) {
-                const eventsResponse = data._embedded.events;
-                console.log("Response from ticketmaster api call");
-                console.log(eventsResponse);
-                for (d of eventsResponse) {
-                    const eventInfo = {
-                        title: d.name,
-                        dateTime: d.dates.start.dateTime,
-                        info: "",
-                        pricerange: "Free",
-                        thumbnail: d.images[0].url,
-                        source: "ticketmaster",
-                        link: "",
-                        address: ""
-                    }
-                    if ("_embedded" in d && "venues" in d._embedded) {
-                        eventInfo.link = d._embedded.venues[0].url;
-                        eventInfo.address = d._embedded.venues[0].address.line1 + `, ${eventCity}, ${eventState}`;
-                    }
-
-                    if ("info" in d) {
-                        eventInfo.info = d.info;
-                    }
-
-                    if ("priceRanges" in d) {
-                        const priceData = d.priceRanges[0];
-                        let pInfoStr = ""
-                        if (("min" in priceData) && ("max" in priceData)) {
-                            pInfoStr = priceData.min + " - " + priceData.max + " USD";
-                        } else if ("min" in priceData) {
-                            pInfoStr = priceData.min + "USD";
-                        } else if ("max" in priceData) {
-                            pInfoStr = priceData.max + "USD";
-                        }
-                        eventInfo.pricerange = pInfoStr;
-                    }
-
-                    eventsData.push(eventInfo);
-                }
-                storeToLocalStorage(eventsData);
-            }
-
-            renderResults();
-            // clear input fields
-            // Commenting this as it deletes the entries on page load.
-            // eventCityEl.value = "";
-            // eventTypeEl.value = "";
-            // eventStateEl.value = "";
-        });
-
-}
-
-// Method to validate that the event city field is not empty.
-function validateFieldsAreNotEmpty() {
-    if (eventCityEl.value === "") {
-        pErrorMsgEl.textContent = "Event city is a required field!"
-        pErrorMsgEl.style.display = "block";
-        pErrorMsgEl.style.color = "red";
-        return false;
-    }
-    return true;
-}
-
-//TODO: Bulma styling ?
-function populateUsStates() {
-    const eventStateEl = document.getElementById("eventState");
-    for (s of usStates) {
-        const optionEl = document.createElement("option");
-        optionEl.textContent = s;
-        optionEl.value = s;
-        eventStateEl.appendChild(optionEl);
-    }
-}
-
-// <----- Event Call backs ---->
 // Call back function for the search button
 function handleSearchFormSubmit(event) {
     event.preventDefault();
+
+    // clear local storage of old search results
+    storeToLocalStorage("events", []);
+
     if (validateFieldsAreNotEmpty()) {
+        // Get the lat and lng for the search city and state and store it in local storage as the new center
+        getLatLngForaddressAndPlotOnMap([eventCityEl.value + "," + eventStateEl.value], true);
+        // init map with the new center
+        initMap();
+
+        // Query ticket master and render the results and event location on the map
         queryAndRenderEventsFromTicketMaster(eventTypeEl.value, eventCityEl.value, eventStateEl.value);
     }
-
 }
 
 // Call back function to clear the error msg when user click on any of the input boxes
@@ -288,9 +538,10 @@ function handleFormFieldsClick() {
     pErrorMsgEl.style.display = "none";
 }
 
+// Call back method to handle load window event
 function initWindowFunction() {
     // empty localstorage
-    storeToLocalStorage([]);
+    storeToLocalStorage("events", []);
     // populate the drop down button with the US states
     populateUsStates();
 
@@ -301,10 +552,10 @@ function initWindowFunction() {
             const lng = position.coords.longitude;
             console.log(`Current location points to: lat:${lat} and lng: ${lng}`);
             const gReverseGeoCodingApi = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&result_type=locality&sensor=true&key=${gApiKey}`;
-            console.log(`Invoking reverse geocoding api: ${gReverseGeoCodingApi} to fetch the city and state from the co-ordinates`);
+            // console.log(`Invoking reverse geocoding api: ${gReverseGeoCodingApi} to fetch the city and state from the co-ordinates`);
             fetch(gReverseGeoCodingApi)
                 .then(function (response) {
-                    console.log("response");
+                    // console.log("response");
                     return response.json();
                 })
                 .then(function (data) {
@@ -316,6 +567,10 @@ function initWindowFunction() {
                     console.log(`Got back current city as: ${curCity} and state as: ${curState}. Rendering events .. `);
                     eventCityEl.value = curCity;
                     eventStateEl.value = curState;
+                    console.log("Storing cur location to local storage for plotting.");
+                    const locationData = [{ lat: lat, lng: lng }, curCity + ", " + curState];
+                    storeToLocalStorage("center", [locationData]);
+                    initMap();
                     queryAndRenderEventsFromTicketMaster("events", curCity, curState);
                 });
 
@@ -325,7 +580,7 @@ function initWindowFunction() {
 }
 
 
-// <----- Event Listeners ----->
+// <----- Add Event Listeners ----->
 searchForm.addEventListener('submit', handleSearchFormSubmit);
 
 document.querySelectorAll('.formControls').forEach(el => {

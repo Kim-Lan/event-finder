@@ -43,6 +43,36 @@
   max-height: "100px";
 }
 
+#googleMapsContainer {
+  height: 650px;
+}
+
+#eventResultsContainer {
+  display: flex;
+  flex-direction: column;
+  /* Add this to stack cards vertically */
+  overflow-y: scroll;
+  /* Enable vertical scrolling */
+  max-height: 800px;
+  /* Set a maximum height for the container */
+  /* padding: 20px; */
+  border: 2px solid white;
+  /* Optional, for visualization */
+  /* max-width: 80%; */
+}
+
+.p-5 {
+  flex: 0 0 auto;
+  margin-bottom: 10px;
+  /* Space between cards */
+  /* box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1); /* Card shadow */
+  background-color: white;
+  /* Card background */
+  border-radius: 20px 20px 20px 20px;
+  cursor: pointer;
+
+}
+
 /* Credit: https://blog.hubspot.com/website/css-loading-animation */
 .loader {
   margin: auto;
