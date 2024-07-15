@@ -401,7 +401,10 @@ function queryAndRenderEventsFromTicketMaster(eventType, eventCity, eventState) 
                     eventsData.push(eventInfo);
                 }
                 storeToLocalStorage("events", eventsData);
-            }
+                 // Calling populateEventTypes after storing events in local storage
+                populateEventTypes();
+
+                }
 
             renderResults();
             // clear input fields
@@ -422,6 +425,33 @@ function validateFieldsAreNotEmpty() {
         return false;
     }
     return true;
+}
+
+function populateEventTypes() {
+
+    const events = readFromLocalStorage("events");
+    console.log("Event Types");
+    console.log(events);
+
+    // Clear existing options
+    eventTypeEl.innerHTML = '';
+
+    // Create a default option
+    const defaultOption = document.createElement("option");
+    defaultOption.textContent = "Select Event Type";
+    defaultOption.value = "";
+    eventTypeEl.appendChild(defaultOption);
+
+    // Extract unique event titles
+    const eventTitles = [...new Set(events.map(event => event.title))];
+
+    // Create and append options
+    eventTitles.forEach(title => {
+        const optionEl = document.createElement("option");
+        optionEl.textContent = title;
+        optionEl.value = title;
+        eventTypeEl.appendChild(optionEl);
+    });
 }
 
 function populateUsStates() {
@@ -543,6 +573,7 @@ function initWindowFunction() {
     // empty localstorage
     storeToLocalStorage("events", []);
     // populate the drop down button with the US states
+    populateEventTypes();
     populateUsStates();
 
     // Get current location - lat/lng
@@ -588,3 +619,5 @@ document.querySelectorAll('.formControls').forEach(el => {
 });
 
 window.onload = initWindowFunction;
+
+
