@@ -33,7 +33,11 @@
         <form id="search-form">
           <div class="formControlContainer">
             <label for="eventType" class="label formLabels has-text-weight-normal">Event Type</label>
-            <input id="eventType" type="text" class="input is-info formControls" placeholder="enter event type">
+            <div class="select is-info formControls">
+              <select id="eventType" class="formControls" style="color:black">
+                <!-- Options will be populated dynamically -->
+              </select>
+            </div>
           </div>
           <div class="formControlContainer mt-3">
             <label for="eventCity" class="label formLabels has-text-weight-normal">City</label>
@@ -83,3 +87,5 @@
 </body>
 
 </html>
+
+
