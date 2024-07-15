@@ -10,15 +10,19 @@ const usStates = ["AK", "AL", "AS", "AZ", "AR", "CA", "CO", "CT", "DE", "DC",
     "NM", "NY", "NC", "ND", "MP", "OH", "OK", "OR", "PW", "PA", "PR", "RI",
     "SC", "SD", "TN", "TX", "UT", "VT", "VI", "VA", "WA", "WV", "WI", "WY",
     "AE", "AA", "AP"];
-const gApiKey = "AIzaSyAjEdX6S_xFQigVRScAJn6tIFbdu_18lzA"
+// const gApiKey = "AIzaSyAjEdX6S_xFQigVRScAJn6tIFbdu_18lzA"
+const gApiKey = "AIzaSyBDQBqqVosxKqFZGE2XKhBEoZUIiWJ-OUE";
 const ticketMasterApiKey = "NKLwGZ8Q2Ia64tUfDRcaU1AUZ0ChUWGW"
 const gMapsBaseUrl = "https://maps.googleapis.com/maps/api/geocode/json?";
 let map;
+let markers = [];
+let addressToMarkers = {};
+let eventIdToAddressMap = {}
 
 
-// <----- Helper Methods ----->
+// <----- HELPER METHODS----->
 
-// <---- local storage helper methods ---->
+// <---- LOCAL STORAGE HELPER METHODS---->
 function storeToLocalStorage(key, eventsArr) {
     console.log("Storing the below info to localstorage");
     console.log(eventsArr);
@@ -34,8 +38,8 @@ function readFromLocalStorage(key) {
     return output;
 }
 
-// <---- Map helper methods ---->
-//TODO: Add Credit
+// <---- MAP HELPER METHODS---->
+//Credit: https://developers.google.com/maps/documentation/javascript/advanced-markers/accessible-markers
 // Helper method to plot a set of locations on the map
 function plotCoordinatesOnMap(locations) {
     // Create an info window to share between markers.
@@ -49,7 +53,10 @@ function plotCoordinatesOnMap(locations) {
                 map,
                 position: position,
                 title: `${title}`,
+                content: createPinElement("red")
             });
+
+
 
             // Add a click listener for each marker, and set up the info window.
             marker.addListener("click", () => {
@@ -57,8 +64,19 @@ function plotCoordinatesOnMap(locations) {
                 infoWindow.setContent(marker.title);
                 infoWindow.open(marker.map, marker);
             });
+
+            markers.push(marker);
+            addressToMarkers[`${title}`] = markers.length - 1;
         });
     }
+}
+
+// helper function to toggle pin color
+function createPinElement(color) {
+    const pin = new google.maps.marker.PinElement({
+        background: color,
+    });
+    return pin.element;
 }
 
 // Helper method to get co-ordinates given a list of addresses and plotting them on graph.
@@ -72,7 +90,7 @@ function getLatLngForaddressAndPlotOnMap(addresses, isCenter = false) {
                 return response.json();
             })
             .then(function (data) {
-                console.log(data);
+                //console.log(data);
                 const lat = data.results[0].geometry.location.lat;
                 const lng = data.results[0].geometry.location.lng;
                 //locations.push([{ lat: lat, lng: lng }, a])
@@ -83,13 +101,19 @@ function getLatLngForaddressAndPlotOnMap(addresses, isCenter = false) {
                     return;
                 }
                 // console.log(`Plotting (${lat}, ${lng}) on map`);
-                console.log("Plotting " + data.results[0].formatted_address);
+                // console.log("Plotting " + data.results[0].formatted_address);
                 plotCoordinatesOnMap([[{ lat: lat, lng: lng }, data.results[0].formatted_address]]);
             });
     }
+    // console.log("markers");
+    // console.log(markers);
+    // console.log("map");
+    // console.log(addressToMarkers);
+    // console.log("eventid to address map");
+    // console.log(eventIdToAddressMap);
 }
 
-// TODO: Credit from google doc
+// Credit: https://developers.google.com/maps/documentation/javascript/advanced-markers/accessible-markers
 // Initialize the map with a "center" location stored in local storage.
 function initMap() {
     const locationData = readFromLocalStorage("center");
@@ -100,17 +124,17 @@ function initMap() {
         console.log("curloca");
         console.log(curLocation);
         map = new google.maps.Map(document.getElementById("googleMapsContainer"), {
-            zoom: 10,
+            zoom: 12,
             center: {
                 lat: curLocation[0].lat, lng: curLocation[0].lng
             },
-            mapId: "eventsMap"
+            mapId: "2949a34a4a7c2b1a" //"eventsMap"
         });
         plotCoordinatesOnMap(locationData);
     }
 }
 
-// <----- Helper methods for rendering results ---->
+// <----- HELPER METHOD FOR RENDERING RESULTS---->
 const resultsContainerEl = document.getElementById('eventResultsContainer');
 
 // Read from local storage, loop through the events and render the events card.
@@ -124,13 +148,15 @@ function renderResults() {
     console.log("events");
     console.log(events);
     if (events.length !== 0) {
+        let idx = 0;
         for (const event of events) {
-            renderCard(event);
+            renderCard(event, idx);
             // record address
             addresses.push(event.address);
+            eventIdToAddressMap[`${idx}`] = event.address;
+            idx++;
         }
     } else {
-        console.log("No events found");
         // display a notification saying no results from ticket master
         const divEl = document.createElement("div");
         divEl.setAttribute("class", "notification is-warning is-light")
@@ -138,7 +164,8 @@ function renderResults() {
         const delBtnEl = document.createElement("button");
         delBtnEl.setAttribute("class", "delete");
         const pMsgEl = document.createElement("p");
-        pMsgEl.textContent = `No events found on TicketMaster for ${eventCityEl.value},  ${eventStateEl.value}.`;
+        const eType = eventTypeEl.value.toLowerCase() === "events" ? "" : eventTypeEl.value
+        pMsgEl.textContent = `No ${eType} events found on TicketMaster for ${eventCityEl.value},  ${eventStateEl.value}.`;
         divEl.append(delBtnEl, pMsgEl);
         resultsContainerEl.append(divEl);
         console.log("wiat");
@@ -147,6 +174,7 @@ function renderResults() {
     // Create Google button
     const googleBtn = document.createElement('button');
     googleBtn.setAttribute('class', 'button mb-5 is-info is-light is-hovered has-text-weight-normal');
+    googleBtn.style.width = '100%';
     document.getElementById("googleEvents").innerHTML = "";
 
     // Add Google Icon
@@ -166,13 +194,67 @@ function renderResults() {
     console.log("Getting lat/lng for event addresses and plot on map ");
     console.log(addresses)
     getLatLngForaddressAndPlotOnMap(addresses);
+
+    // Add mouseover event listener for the result cards
+    const resultCardEls = document.querySelectorAll("[data-eventId]");
+    resultCardEls.forEach(function (elem) {
+        //elem.addEventListener("click", (event) => handleCardClick(event));
+        elem.addEventListener("mouseenter", (event) => handleCardMouseEvent(event, "enter"));
+        elem.addEventListener("mouseleave", (event) => handleCardMouseEvent(event, "exit"));
+    });
+}
+
+// Helper method to handle mouse over event on the result card to change the pin color
+function handleCardMouseEvent(event, eventName) {
+    console.log("card click");
+    console.log(eventName);
+    console.log(event);
+    // get the src element of the event from the event obj
+    const srcEl = event.srcElement;
+
+    // get the closes parent with the class eventResultCard
+    const parentEl = srcEl.closest(".eventResultCard");
+    console.log(parentEl);
+
+    // access the data attribute eventId from the parent element.
+    const eventId = parentEl.dataset.eventid;
+    console.log(`Clicked on event with id: ${eventId}`);
+
+    // get address from event id
+    const address = eventIdToAddressMap[eventId];
+    console.log(`got back address as ${address}`);
+    const searchStr = address.split(" ")[0];
+
+    let markerId;
+    for (const [key, value] of Object.entries(addressToMarkers)) {
+        console.log(value);
+        if (key.includes(searchStr)) {
+            markerId = value;
+            break;
+        }
+    }
+
+    console.log(`Got back markerId as: ${markerId}`);
+
+    if (markers[markerId]) {
+        let pincolor;
+        if (eventName === "enter") {
+            pincolor = "blue"
+        } else {
+            pincolor = "red"
+        }
+        const pinElement = createPinElement(pincolor);
+        markers[markerId].element.innerHTML = '';
+        markers[markerId].element.appendChild(pinElement);
+    }
 }
 
 // Helper method to create results with styling card
-function renderCard(eventObj) {
+function renderCard(eventObj, eventId) {
 
     const cardBoxEl = document.createElement("div");
-    cardBoxEl.setAttribute("class", "box");
+    cardBoxEl.setAttribute("class", "box eventResultCard");
+    cardBoxEl.setAttribute("data-eventid", eventId);
     const articleEl = document.createElement("article");
     articleEl.setAttribute("class", "media");
 
@@ -217,8 +299,10 @@ function renderCard(eventObj) {
     //Nav bar
     const navEl = document.createElement('nav');
     navEl.setAttribute("class", "level");
+    navEl.style.alignItems = "flex-start";
     const miscDivEl = document.createElement('div');
     miscDivEl.setAttribute("class", "level-left");
+    miscDivEl.style.flexDirection = "row";
 
     // ticketmaster icon
     const aSrcEl = document.createElement("a");
@@ -227,8 +311,6 @@ function renderCard(eventObj) {
     spanSrcEl.setAttribute("class", "icon is-small");
     const sourceEl = document.createElement('img');
     sourceEl.src = './assets/images/ticketmaster-logo.png';
-    // sourceEl.style.height = '20px';
-    // sourceEl.style.width = '25px';
     spanSrcEl.appendChild(sourceEl);
     aSrcEl.append(spanSrcEl);
 
@@ -329,7 +411,7 @@ function _renderCard(eventObj) {
     resultsContainerEl.append(cardEl);
 }
 
-// <---- google events link ---->
+// <---- GOOGLE EVENTS BUTTONG---->
 
 function handleGoogleButtonClick(event) {
 
@@ -341,7 +423,7 @@ function handleGoogleButtonClick(event) {
     window.open(googleSearchUrl, '_blank');
 }
 
-// <----- Helper methods for form submit ----->
+// <----- HELPER METHOD FOR FORM SUBMIT----->
 
 // Helper method to query events from ticket master and render it.
 function queryAndRenderEventsFromTicketMaster(eventType, eventCity, eventState) {
@@ -434,8 +516,7 @@ function populateUsStates() {
     }
 }
 
-
-// <----- Event Call backs ---->
+// <----- EVENT CALLBACKS ---->
 
 // Event call back to  handle more-info button click.
 function handleMoreInfoButtonClick(event, eventObj) {
@@ -521,6 +602,11 @@ function handleSearchFormSubmit(event) {
     // clear local storage of old search results
     storeToLocalStorage("events", []);
 
+    // reset globals
+    markers = [];
+    addressToMarkers = {};
+    eventIdToAddressMap = {};
+
     if (validateFieldsAreNotEmpty()) {
         // Get the lat and lng for the search city and state and store it in local storage as the new center
         getLatLngForaddressAndPlotOnMap([eventCityEl.value + "," + eventStateEl.value], true);
@@ -575,6 +661,8 @@ function initWindowFunction() {
                 });
 
         });
+    } else {
+        console.log("not enabled");
     }
     // TODO: What msg to print if user does not enable  gelocatuon
 }

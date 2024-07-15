@@ -33,7 +33,17 @@
         <form id="search-form">
           <div class="formControlContainer">
             <label for="eventType" class="label formLabels has-text-weight-normal">Event Type</label>
-            <input id="eventType" type="text" class="input is-info formControls" placeholder="enter event type">
+            <!-- <input id="eventType" type="text" class="input is-info formControls" placeholder="enter event type"> -->
+            <div class="select is-info formControls">
+              <select id="eventType" class="formControls" style="color:black">
+                <option value="events">Events</option>
+                <option value="music">Music</option>
+                <option value="dance">Dance Party</option>
+                <option value="concert">Concert</option>
+                <option value="comedy">Comedy Shows</option>
+                <option value="games">Games</option>
+              </select>
+            </div>
           </div>
           <div class="formControlContainer mt-3">
             <label for="eventCity" class="label formLabels has-text-weight-normal">City</label>
