@@ -111,9 +111,11 @@ The primary motivation behind developing the Event-Finder App was to address the
 # Links 
 
 
-* Deployed App :   
+* Deployed App :   https://kim-lan.github.io/event-finder/
 
-* GitHub Repo : 
+* GitHub Repo :     https://github.com/Kim-Lan/event-finder
+
+
 
 
 
